@@ -8,7 +8,7 @@ import './EdBoardPage.dart';
 import './SelectBondedDevicePage.dart';
 import './ChatPage.dart';
 import './BackgroundCollectingTask.dart';
-import './BackgroundCollectedPage.dart';
+import './RouteSelectionPage.dart';
 
 // import './helpers/LineChart.dart';
 
@@ -237,7 +237,21 @@ class _MainPage extends State<MainPage> {
             ),
             ListTile(
               title: RaisedButton(
-                child: const Text('BOARD'),
+                child: const Text('Route selection'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return RouteSelectionPage();
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            ListTile(
+              title: RaisedButton(
+                child: const Text('Route Editor'),
                 onPressed: () async {
                   final BluetoothDevice selectedDevice =
                       await Navigator.of(context).push(

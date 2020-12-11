@@ -1,4 +1,10 @@
-# `flutter_bluetooth_serial_example`
+# Boulder Lights 
+
+Flutter app to control LED lights of a boulder board with RaspberryPi via Bluetooth.
+
+Based on
+- https://github.com/edufolly/flutter_bluetooth_serial (example)
+- https://github.com/alextekartik/flutter_app_example
 
 ## steps for connections after rpi restsart
 
