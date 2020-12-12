@@ -1,8 +1,8 @@
-name: boulder_lights_app 
+name: boulder_lights_app
 version: 0.0.1
 publish_to: none
 description: Demonstrates how to use the `flutter_bluetooth_serial` plugin.
-authors: 
+authors:
 - Patryk Ludwikowski <patryk.ludwikowski.7@gmail.com>
 homepage: https://github.com/edufolly/flutter_bluetooth_serial/tree/master/example/
 
@@ -14,14 +14,15 @@ dependencies:
     sdk: flutter
 
   path_provider: ^1.6.24
-  get_it: ^5.0.3
+  # injectable:
+  # get_it: ^5.0.3
   # sembast: '>=2.4.8'
   # tekartik_common_utils:
   #   git:
   #     url: git://github.com/tekartik/common_utils.dart
   #     ref: dart2
 
-  flutter_bluetooth_serial: ^0.2.2  
+  flutter_bluetooth_serial: ^0.2.2
 
   scoped_model: ^1.0.1
 
@@ -30,6 +31,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # injectable_generator:
+  # build_runner:
 
 flutter:
   uses-material-design: true

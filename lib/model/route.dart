@@ -1,9 +1,19 @@
 class BoardRoute {
   String title;
-  String content;
+  String config;
   DateTime date;
 
   // TODO Add Author
 
-  List<BoardRoute> get fields => [this];
+  BoardRoute({
+    this.title,
+    this.config,
+    // this.date,
+  });
+
+  // List<BoardRoute> get fields => [this];
+  factory BoardRoute.fromJson(Map<String, dynamic> json) => BoardRoute(
+    title: json["title"],
+    config: json["config"],
+  );
 }
