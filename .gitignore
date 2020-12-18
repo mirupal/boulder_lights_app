@@ -54,7 +54,6 @@
 **/ios/**/xcuserdata
 **/ios/.generated/
 **/ios/Flutter/App.framework
-**/ios/Flutter/flutter_export_environment.sh
 **/ios/Flutter/Flutter.framework
 **/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/app.flx
@@ -62,6 +61,8 @@
 **/ios/Flutter/flutter_assets/
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Flutter.podspec
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
