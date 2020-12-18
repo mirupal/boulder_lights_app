@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:boulder_lights_app/model/route.dart';
+
+import 'model/route.dart';
 
 class EdBoardPage extends StatefulWidget {
   final BluetoothDevice server;
@@ -17,6 +22,7 @@ class _EdBoardPage extends State<EdBoardPage> {
   bool isConnecting = true;
   bool get isConnected => connection != null && connection.isConnected;
 
+  var _currentIndex = 1;
   bool isDisconnecting = false;
   List<List<bool>> gridState = [
     [
@@ -208,23 +214,40 @@ class _EdBoardPage extends State<EdBoardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: (isConnecting
-              ? Text('Connecting to board ...')
-              : isConnected
-                  ? Text('Connected with board')
-                  : Text('no connection')),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.replay),
-              onPressed: () => print("pressed something!"),
-            )
-          ],
-        ),
-        body: _buildGameBody());
+      appBar: AppBar(
+        title: (isConnecting
+            ? Text('Connecting to board ...')
+            : isConnected
+                ? Text('Connected with board')
+                : Text('no connection')),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.replay),
+            onPressed: () => print("pressed something!"),
+          )
+        ],
+      ),
+      body: _buildBoard(),
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: (onTabTapped), // new
+        currentIndex: _currentIndex, // new
+        items: [
+          new BottomNavigationBarItem(
+            icon: Icon(Icons.save),
+            label: 'Save',
+          ),
+          new BottomNavigationBarItem(
+            icon: Icon(Icons.replay),
+            label: 'Reset',
+          ),
+          new BottomNavigationBarItem(
+              icon: Icon(Icons.star), label: 'Enable')
+        ],
+      ),
+    );
   }
 
-  Widget _buildGameBody() {
+  Widget _buildBoard() {
     int gridStateLength = gridState.length;
 
     int gridWidth = gridState[0].length;
@@ -276,7 +299,7 @@ class _EdBoardPage extends State<EdBoardPage> {
                 (element) => element['x'] == x && element['y'] == y);
           }
           print(holds.toString());
-          _sendMessage(json.encode(holds));
+
           this.setState(() {});
         },
         child: GridTile(
@@ -337,5 +360,74 @@ class _EdBoardPage extends State<EdBoardPage> {
         setState(() {});
       }
     }
+  }
+
+  void onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+
+    print ('tapped index ' + index.toString());
+    if (index == 0) { // save
+      _saveCurrentRoute();
+    }
+
+    if (index == 1) { // reset
+
+    }
+
+    if (index == 2) { // send to board
+      _sendMessage(json.encode(holds));
+    }
+
+  }
+
+  void _saveCurrentRoute() async {
+      var data;
+      List<BoardRoute> routes = [];
+      final directory = await getApplicationDocumentsDirectory();
+      final file= File('${directory.path}/routes.json');
+      if (false || !file.existsSync()) {
+        file.createSync();
+      }
+
+      // load route db
+      String routesJson = await file.readAsString();
+      try {
+        data = jsonDecode(routesJson);
+        for (Map i in data) {
+          routes.add(BoardRoute.fromJson(i));
+        }
+
+        // current holds config to json
+        var holdsJson = json.encode(holds);
+
+        // new rout init
+        BoardRoute newRoute = BoardRoute(creator: 'Test',
+          createdAt: DateTime.now(), difficulty: '7a', title: 'ToMuchHang', config: holdsJson);
+
+        // add new route
+        routes.add(newRoute);
+
+        // save routes
+
+      } catch (e) {
+        print('invalid json ' + e.toString());
+      }
+
+
+      final text =
+          '[{"id": "add-uu-id-here","createdAt": "2020-01-01","title": "Route1","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}, {"id": "add-uu-id-here","createdAt": "2020-01-01", "title": "Route 66","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}]';
+
+      var tmpData = [];
+      for (BoardRoute r in routes) {
+        tmpData.add(r.toJson());
+      }
+      final routesEncodedJson = json.encode(tmpData);
+      print ("routes to save " + routesEncodedJson);
+      await file.writeAsString(routesEncodedJson);
+
+
+
   }
 }

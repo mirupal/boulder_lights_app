@@ -1,0 +1,15 @@
+[{
+  "id": "add-uu-id-here",
+  "createdAt": "2020-01-01",
+  "title": "Route1",
+  "config": "xy coords object here",
+  "creator": "Eduard",
+  "difficulty": "5a"
+}, {
+  "id": "add-uu-id-here",
+  "createdAt": "2020-01-01",
+  "title": "Route 66",
+  "config": "xy coords object here",
+  "creator": "Eduard",
+  "difficulty": "5a"
+}]

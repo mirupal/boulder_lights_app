@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:boulder_lights_app/model/route.dart';
@@ -41,11 +42,13 @@ class _RouteSelectionPageState extends State<RouteSelectionPage> {
     var data;
     final directory = await getApplicationDocumentsDirectory();
     _file = File('${directory.path}/routes.json');
-    // if (!_file.existsSync()) {
-    _file.createSync();
-    final text = '[{"title": "Route1", "config": "xy coords object here"}, {"title": "Route 66", "config": "xy coords object here"}]';
-    await _file.writeAsString(text);
-    // }
+    if (false || !_file.existsSync()) {
+      _file.createSync();
+    } else {
+      // final text =
+      //     '[{"id": "add-uu-id-here","createdAt": "2020-01-01","title": "Route1","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}, {"id": "add-uu-id-here","createdAt": "2020-01-01", "title": "Route 66","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}]';
+      // await _file.writeAsString(text);
+    }
 
     String routesJson = await _file.readAsString();
     print('route json raw ' + routesJson);
@@ -70,63 +73,34 @@ class _RouteSelectionPageState extends State<RouteSelectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-            title: Text(
-          'NotePad',
-        )),
-        body: Container(
-            child: _loading
-                ? Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    itemCount: _routes.length,
-                    itemBuilder: (context, i) {
-                      return Container(
-                        child: Text(_routes[i].title),
-                      );
-                    }))
-        // body: StreamBuilder<List<BoardRoute>>(
-        //   stream: noteProvider.onNotes(), // TODO add stream from json file
-        //   builder: (context, snapshot) {
-        //     var notes = snapshot.data;
-        //     if (notes == null) {
-        //       return Center(
-        //         child: CircularProgressIndicator(),
-        //       );
-        //     }
-        //     return ListView.builder(
-        //         itemCount: notes?.length,
-        //         itemBuilder: (context, index) {
-        //           var note = notes[index];
-        //           return ListTile(
-        //             title: Text(note.title?.v ?? ''),
-        //             subtitle: Text("tdodo add description"),
-        //             onTap: () async {
-        //               Navigator.of(context).push(
-        //                 MaterialPageRoute(
-        //                   builder: (context) {
-        //                     return EdBoardPage(
-        //                       server: server,
-        //                     );
-
-        //                     /// TODO need to set serverin a singleton sevice so its accessible from everywhere. Use get_it for this
-        //                   },
-        //                 ),
-        //               );
-        //             },
-        //           );
-        //         });
-        //   },
-        // ),
-        // floatingActionButton: FloatingActionButton(
-        //   child: Icon(Icons.add),
-        //   onPressed: () {
-        //     Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-        //       return EditNotePage(
-        //         initialNote: null,
-        //       );
-        //     }));
-        //   },
-        // ),
-        );
+      appBar: AppBar(
+          title: Text(
+        'Select route',
+      )),
+      body: Container(
+          child: _loading
+              ? Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  itemCount: _routes.length,
+                  itemBuilder: (context, i) {
+                    var route = _routes[i];
+                    return ListTile(
+                        leading: Icon(Icons.trending_up),
+                        trailing: Icon(Icons.chevron_right),
+                        title: Text(route.title + " (" + route.difficulty + ")"),
+                        subtitle: Text(route.creator + ", am " + DateFormat('dd.MM.yyyy kk:mm').format(route.createdAt)),
+                        onTap: () async {});
+                  })),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {
+          // Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+          //   return EditNotePage(
+          //     initialNote: null,
+          //   );
+          // }));
+        },
+      ),
+    );
   }
 }
