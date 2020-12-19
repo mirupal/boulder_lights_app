@@ -42,8 +42,9 @@ class _RouteSelectionPageState extends State<RouteSelectionPage> {
     var data;
     final directory = await getApplicationDocumentsDirectory();
     _file = File('${directory.path}/routes.json');
-    if (false || !_file.existsSync()) {
+    if (!_file.existsSync()) {
       _file.createSync();
+      await _file.writeAsString('[]'); // create new with 0 routes
     } else {
       // final text =
       //     '[{"id": "add-uu-id-here","createdAt": "2020-01-01","title": "Route1","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}, {"id": "add-uu-id-here","createdAt": "2020-01-01", "title": "Route 66","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}]';

@@ -17,7 +17,8 @@ class EdBoardPage extends StatefulWidget {
 }
 
 class _EdBoardPage extends State<EdBoardPage> {
-  static final clientID = 0;
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   BluetoothConnection connection;
   bool isConnecting = true;
   bool get isConnected => connection != null && connection.isConnected;
@@ -229,7 +230,9 @@ class _EdBoardPage extends State<EdBoardPage> {
       ),
       body: _buildBoard(),
       bottomNavigationBar: BottomNavigationBar(
-        onTap: (onTabTapped), // new
+        onTap: (int index) {
+          onTabTapped(index, context);
+        }, // new
         currentIndex: _currentIndex, // new
         items: [
           new BottomNavigationBarItem(
@@ -362,18 +365,25 @@ class _EdBoardPage extends State<EdBoardPage> {
     }
   }
 
-  void onTabTapped(int index) {
+  void onTabTapped(int index, context) async {
     setState(() {
       _currentIndex = index;
     });
 
     print ('tapped index ' + index.toString());
     if (index == 0) { // save
-      _saveCurrentRoute();
+      Map<String, dynamic> data = await _saveAs(context);
+      if (data != null) {
+        print('save data' + data.toString());
+        _saveCurrentRoute(data);
+
+      } else {
+        print(' do nothing as modal was just closed');
+      }
     }
 
     if (index == 1) { // reset
-
+      _resetHolds();
     }
 
     if (index == 2) { // send to board
@@ -382,13 +392,27 @@ class _EdBoardPage extends State<EdBoardPage> {
 
   }
 
-  void _saveCurrentRoute() async {
+  void _resetHolds() {
+    for (int i = 0; i < gridState.length; i++) {
+      for (int j = 0; j < gridState[i].length; j++) {
+        gridState[i][j] = false;
+      }
+    }
+
+    holds = [];
+    _sendMessage(json.encode(holds));
+
+    this.setState(() {});
+  }
+
+  void _saveCurrentRoute(Map<String, dynamic> config) async {
       var data;
       List<BoardRoute> routes = [];
       final directory = await getApplicationDocumentsDirectory();
       final file= File('${directory.path}/routes.json');
-      if (false || !file.existsSync()) {
+      if (!file.existsSync()) {
         file.createSync();
+        await file.writeAsString('[]'); // create new with 0 routes
       }
 
       // load route db
@@ -404,7 +428,7 @@ class _EdBoardPage extends State<EdBoardPage> {
 
         // new rout init
         BoardRoute newRoute = BoardRoute(creator: 'Test',
-          createdAt: DateTime.now(), difficulty: '7a', title: 'ToMuchHang', config: holdsJson);
+          createdAt: DateTime.now(), difficulty: '7a', title: config["name"], config: holdsJson);
 
         // add new route
         routes.add(newRoute);
@@ -426,8 +450,65 @@ class _EdBoardPage extends State<EdBoardPage> {
       final routesEncodedJson = json.encode(tmpData);
       print ("routes to save " + routesEncodedJson);
       await file.writeAsString(routesEncodedJson);
+  }
 
+  _saveAs(context) {
+    TextEditingController _controller = TextEditingController();
 
-
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Stack(
+            overflow: Overflow.visible,
+            children: <Widget>[
+              Positioned(
+                right: -40.0,
+                top: -40.0,
+                child: InkResponse(
+                  onTap: () {
+                    Navigator.pop(context, "noice");
+                  },
+                  child: CircleAvatar(
+                    child: Icon(Icons.close),
+                    backgroundColor: Colors.red,
+                  ),
+                ),
+              ),
+              Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: TextFormField(controller: _controller),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: TextFormField(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: RaisedButton(
+                        child: Text("Speichern"),
+                        onPressed: () {
+                          if (_formKey.currentState.validate()) {
+                            _formKey.currentState.save();
+                            Navigator.pop(context, {"name": _controller.text});
+                          }
+                        },
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).then((val) {
+        print ('something returned? ' + val.toString());
+        return val;
+      });
   }
 }
