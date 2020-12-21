@@ -1,6 +1,8 @@
+import 'package:uuid/uuid.dart';
 class BoardRoute {
+  String guid;
   String title;
-  String config;
+  String holds;
   String creator;
   String difficulty;
   DateTime createdAt;
@@ -9,25 +11,33 @@ class BoardRoute {
 
   BoardRoute({
     this.title,
-    this.config,
+    this.holds,
     this.creator,
     this.difficulty,
     this.createdAt,
   });
 
   // List<BoardRoute> get fields => [this];
-  factory BoardRoute.fromJson(Map<String, dynamic> json) => BoardRoute(
-    title: json["title"],
-    config: json["config"],
-    // date: new DateTime(json["date"]),
-    creator: json["creator"],
-    difficulty: json["difficulty"],
-    createdAt: new DateTime.now(),
-  );
+  factory BoardRoute.fromJson(Map<String, dynamic> json) {
+
+    var instance = BoardRoute(
+      title: json["title"],
+      holds: json["holds"],
+      creator: json["creator"],
+      difficulty: json["difficulty"],
+      // date: new DateTime(json["date"]),
+      createdAt: new DateTime.now(),
+    );
+
+    instance.guid = json["guid"] == null ? Uuid().v1() : json["guid"];
+
+    return instance;
+  }
 
   Map<String, dynamic> toJson() => {
+    "guid": this.guid,
     "title": this.title,
-    "config": this.config,
+    "holds": this.holds,
     "creator": this.creator,
     "difficulty": this.difficulty,
     "createdAt": this.createdAt.toString(),

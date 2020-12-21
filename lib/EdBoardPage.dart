@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:boulder_lights_app/model/route.dart';
 
@@ -10,7 +11,8 @@ import 'model/route.dart';
 
 class EdBoardPage extends StatefulWidget {
   final BluetoothDevice server;
-  const EdBoardPage({this.server});
+  final String routeGuid;
+  const EdBoardPage({this.server, this.routeGuid});
 
   @override
   _EdBoardPage createState() => new _EdBoardPage();
@@ -164,13 +166,17 @@ class _EdBoardPage extends State<EdBoardPage> {
     ],
   ];
 
+  List<BoardRoute> _routes = [];
   List<Map<String, int>> holds = [];
+
+  BoardRoute _currentRoute;
 
   _EdBoardPage();
 
   @override
   void initState() {
     super.initState();
+
     BluetoothConnection.toAddress(widget.server.address).then((_connection) {
       print('Connected to the device');
       connection = _connection;
@@ -178,6 +184,11 @@ class _EdBoardPage extends State<EdBoardPage> {
         isConnecting = false;
         isDisconnecting = false;
       });
+
+      print('route to load id: ' + widget.routeGuid.toString());
+      if (widget.routeGuid != null) {
+        _loadRoute(widget.routeGuid);
+      }
 
       connection.input.listen(_onDataReceived).onDone(() {
         // Example: Detect which side closed the connection
@@ -216,10 +227,15 @@ class _EdBoardPage extends State<EdBoardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: (isConnecting
+            ? Colors.orange
+            : isConnected
+                ? Colors.blueGrey
+                : Colors.red),
         title: (isConnecting
             ? Text('Connecting to board ...')
             : isConnected
-                ? Text('Connected with board')
+                ? Text(_currentRoute != null ? _currentRoute.title : 'loading route..')
                 : Text('no connection')),
         actions: <Widget>[
           IconButton(
@@ -228,7 +244,11 @@ class _EdBoardPage extends State<EdBoardPage> {
           )
         ],
       ),
-      body: _buildBoard(),
+      body: Column(children:[
+        Text('By: ' + (_currentRoute != null ? _currentRoute.creator : 'loading..')),
+        Text('Difficulty: ' + (_currentRoute != null ? _currentRoute.difficulty : 'loading..')),
+        _buildBoard()
+      ]),
       bottomNavigationBar: BottomNavigationBar(
         onTap: (int index) {
           onTabTapped(index, context);
@@ -406,50 +426,40 @@ class _EdBoardPage extends State<EdBoardPage> {
   }
 
   void _saveCurrentRoute(Map<String, dynamic> config) async {
-      var data;
-      List<BoardRoute> routes = [];
-      final directory = await getApplicationDocumentsDirectory();
-      final file= File('${directory.path}/routes.json');
-      if (!file.existsSync()) {
-        file.createSync();
-        await file.writeAsString('[]'); // create new with 0 routes
+    await _loadRoutesDb();
+
+    try {
+
+      // current holds config to json
+      var holdsJson = json.encode(holds);
+
+      // new rout init
+      if (_currentRoute == null) {
+        _currentRoute = BoardRoute.fromJson({"creator": 'Test', "createdAt": DateTime.now(), "difficulty": '7a', "title": config["name"], "holds": holdsJson});
+        print ('created new route route ' + _currentRoute.toJson().toString());
+      } else {
+        _currentRoute.title = config['name'];
+        _currentRoute.holds = holdsJson;
+
       }
 
-      // load route db
-      String routesJson = await file.readAsString();
-      try {
-        data = jsonDecode(routesJson);
-        for (Map i in data) {
-          routes.add(BoardRoute.fromJson(i));
-        }
+      // test if current route already exists in routes, update if
+      if (_routes.any((element) => element.guid == _currentRoute.guid)) {
+        print('route already present, so update!' + _routes.toString());
+        int updateIndex =_routes.indexWhere((element) =>  element.guid == _currentRoute.guid);
+        print('index of route: ' + updateIndex.toString());
 
-        // current holds config to json
-        var holdsJson = json.encode(holds);
-
-        // new rout init
-        BoardRoute newRoute = BoardRoute(creator: 'Test',
-          createdAt: DateTime.now(), difficulty: '7a', title: config["name"], config: holdsJson);
-
-        // add new route
-        routes.add(newRoute);
-
-        // save routes
-
-      } catch (e) {
-        print('invalid json ' + e.toString());
+        _routes[updateIndex] = _currentRoute;
+        print('route already present, after update!' + _routes.toString());
+      } else {
+        print('new route => insert');
+        _routes.add(_currentRoute);
       }
-
-
-      final text =
-          '[{"id": "add-uu-id-here","createdAt": "2020-01-01","title": "Route1","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}, {"id": "add-uu-id-here","createdAt": "2020-01-01", "title": "Route 66","config": "xy coords object here","creator": "Eduard","difficulty": "5a"}]';
-
-      var tmpData = [];
-      for (BoardRoute r in routes) {
-        tmpData.add(r.toJson());
-      }
-      final routesEncodedJson = json.encode(tmpData);
-      print ("routes to save " + routesEncodedJson);
-      await file.writeAsString(routesEncodedJson);
+    } catch (e) {
+      print('invalid json ' + e.toString());
+    }
+    setState(() {});
+    await _persistDb();
   }
 
   _saveAs(context) {
@@ -482,7 +492,12 @@ class _EdBoardPage extends State<EdBoardPage> {
                   children: <Widget>[
                     Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: TextFormField(controller: _controller),
+                      child: TextFormField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          labelText: "Route Name",
+                        )
+                      ),
                     ),
                     Padding(
                       padding: EdgeInsets.all(8.0),
@@ -510,5 +525,72 @@ class _EdBoardPage extends State<EdBoardPage> {
         print ('something returned? ' + val.toString());
         return val;
       });
+  }
+
+  _loadRoute(String guid) async {
+    await _loadRoutesDb();
+    print('find in routes: ' + _routes.toString());
+    _currentRoute = _routes.firstWhere((element) => element.guid == guid);
+
+    // TODO init board view with config
+    try {
+      var tmpRoutes = json.decode(_currentRoute.holds);
+      for (Map i in tmpRoutes) {
+        print ('laoding hold ' + i.toString());
+        holds.add({'x': i['x'], 'y': i['y']});
+      }
+    } catch(e) {
+      print ('Couldnt load hold of current route. ' + e.toString());
+    }
+
+
+    for (Map<String, int> hold in holds) {
+      gridState[hold['y']][hold['x']] = true;
+    }
+
+    setState(() {});
+
+    _sendMessage(json.encode(holds));
+
+  }
+
+  _loadRoutesDb() async {
+    var data;
+    final directory = await getApplicationDocumentsDirectory();
+    final file= File('${directory.path}/routes.json');
+    if (!file.existsSync()) {
+      file.createSync();
+      await file.writeAsString('[]'); // create new with 0 routes
+    }
+
+    // load route db
+    _routes = [];
+    String routesJson = await file.readAsString();
+    print('Loaded routes raw ' + routesJson);
+    try {
+      data = jsonDecode(routesJson);
+      for (Map i in data) {
+        _routes.add(BoardRoute.fromJson(i));
+      }
+    } catch (e) {
+      print('invalid json ' + e.toString());
+    }
+  }
+
+  _persistDb() async {
+    print('Persisting Routes databse');
+    var tmpData = [];
+    for (BoardRoute r in _routes) {
+      tmpData.add(r.toJson());
+    }
+    final routesEncodedJson = json.encode(tmpData);
+    final directory = await getApplicationDocumentsDirectory();
+    final file= File('${directory.path}/routes.json');
+
+    if (!file.existsSync()) {
+      file.createSync();
+    }
+
+    await file.writeAsString(routesEncodedJson);
   }
 }

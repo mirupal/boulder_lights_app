@@ -23,7 +23,7 @@ dependencies:
   #     ref: dart2
 
   flutter_bluetooth_serial: ^0.2.2
-
+  uuid:
   scoped_model: ^1.0.1
 
   cupertino_icons: ^0.1.2

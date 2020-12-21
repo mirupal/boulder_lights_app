@@ -352,7 +352,7 @@ class _MainPage extends State<MainPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) {
-          return EdBoardPage(server: server);
+          return EdBoardPage(server: server, routeGuid: null);
         },
       ),
     );

@@ -3,16 +3,15 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
+import './SelectBondedDevicePage.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import './EdBoardPage.dart';
 import 'package:boulder_lights_app/model/route.dart';
 
 class RouteSelectionPage extends StatefulWidget {
   @override
   _RouteSelectionPageState createState() => _RouteSelectionPageState();
 }
-
-// final directory = await getApplicationDocumentsDirectory();
-// final file = File('${directory.path}/my_file.txt');
-
 class _RouteSelectionPageState extends State<RouteSelectionPage> {
   File _file;
   bool _loading = false;
@@ -90,7 +89,24 @@ class _RouteSelectionPageState extends State<RouteSelectionPage> {
                         trailing: Icon(Icons.chevron_right),
                         title: Text(route.title + " (" + route.difficulty + ")"),
                         subtitle: Text(route.creator + ", am " + DateFormat('dd.MM.yyyy kk:mm').format(route.createdAt)),
-                        onTap: () async {});
+                        onTap: () async {
+                          final BluetoothDevice selectedDevice =
+                              await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return SelectBondedDevicePage(checkAvailability: false);
+                              },
+                            ),
+                          );
+
+                          if (selectedDevice != null) {
+                            print('Connect -> selected ' + selectedDevice.address);
+                            //_startChat(context, selectedDevice);
+                            _startShowBoard(context, selectedDevice, route.guid);
+                          } else {
+                            print('Connect -> no device selected');
+                          }
+                        });
                   })),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
@@ -100,6 +116,17 @@ class _RouteSelectionPageState extends State<RouteSelectionPage> {
           //     initialNote: null,
           //   );
           // }));
+        },
+      ),
+    );
+  }
+
+
+  void _startShowBoard(BuildContext context, BluetoothDevice server, String routeGuid) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) {
+          return EdBoardPage(server: server, routeGuid: routeGuid);
         },
       ),
     );
